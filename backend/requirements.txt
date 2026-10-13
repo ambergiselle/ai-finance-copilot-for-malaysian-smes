@@ -6,7 +6,7 @@ pgvector
 numpy
 supabase
 langchain
-langchain-openai
+langchain-google-genai
 langchain-text-splitters
 sqlglot
 pypdf
