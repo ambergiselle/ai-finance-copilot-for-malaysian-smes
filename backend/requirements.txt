@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+psycopg[binary]
+pgvector
+numpy
+supabase
+langchain
+langchain-openai
+langchain-text-splitters
+sqlglot
+pypdf
+python-dotenv
+pytest
+httpx
+ruff
