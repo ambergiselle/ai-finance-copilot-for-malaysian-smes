@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from .auth import current_business
 from .db import run_safe_sql
+from .agents.sql_agent import ask_data
 
 app = FastAPI(title="AI Finance Copilot for Malaysian SMEs")
 
@@ -34,7 +35,7 @@ def invoices(status: str = "overdue", biz: dict = Depends(current_business)):  #
 
 @app.post("/chat/sql")
 def chat_sql(req: ChatRequest, biz: dict = Depends(current_business)):  # noqa: B008
-    return {"answer": "coming on Day 3"}
+    return ask_data(req.question, biz["id"])
 
 
 @app.post("/chat/docs")
