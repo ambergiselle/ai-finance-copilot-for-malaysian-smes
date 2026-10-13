@@ -17,7 +17,7 @@ BUSINESSES = [
     ("Kedai Hardware Lim", "Retail"),
     ("Bright Minds Tuition Centre", "Education"),
 ]
-START, END = date(2025, 10, 1), date(2026, 9, 30)  # END is "today" in the demo world
+START, END = date(2025, 10, 1), date(2026, 9, 30)
 PREFIX = ["Syarikat", "Kedai", "Perniagaan", "Restoran", "Bengkel", "Pusat"]
 SUFFIX = ["Sdn Bhd", "Enterprise", "Trading", "Holdings"]
 EXPENSES = {
@@ -50,7 +50,7 @@ with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
         for i in range(30):
             cid = uuid.uuid4()
             name = f"{random.choice(PREFIX)} {fake.last_name()} {random.choice(SUFFIX)}"
-            customers.append((cid, i < 3))  # first 3 customers are chronic late payers
+            customers.append((cid, i < 3))
             conn.execute(
                 "insert into customers (id, business_id, name, email) values (%s, %s, %s, %s)",
                 (cid, biz_id, name, fake.company_email()),
@@ -58,7 +58,7 @@ with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
 
         inv_no, month, month_index = 1, START, 0
         while month <= END:
-            festive = month.month in (12, 1, 2)  # year-end and Chinese New Year spike
+            festive = month.month in (12, 1, 2)  # yearend and Chinese New Year spike
             for _ in range(random.randint(15, 25) * (2 if festive else 1)):
                 cid, late = random.choice(customers)
                 issue = rand_day(month)
@@ -103,7 +103,7 @@ with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
 
             for category, base in EXPENSES.items():
                 if category == "utilities":
-                    base *= 1 + 0.05 * month_index  # rising-cost pattern
+                    base *= 1 + 0.05 * month_index  # rising cost pattern
                 conn.execute(
                     """insert into transactions (business_id, txn_date, type, category, description, amount)
                        values (%s, %s, 'expense', %s, %s, %s)""",
