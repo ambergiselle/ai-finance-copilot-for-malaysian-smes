@@ -17,12 +17,12 @@ def health():
 
 
 @app.get("/me")
-def me(biz: dict = Depends(current_business)):
+def me(biz: dict = Depends(current_business)):  # noqa: B008
     return biz
 
 
 @app.get("/invoices")
-def invoices(status: str = "overdue", biz: dict = Depends(current_business)):
+def invoices(status: str = "overdue", biz: dict = Depends(current_business)):  # noqa: B008
     cols, rows = run_safe_sql(
         "select invoice_no, issue_date, due_date, total, status from invoices "
         "where status = %s order by due_date limit 50",
@@ -33,10 +33,10 @@ def invoices(status: str = "overdue", biz: dict = Depends(current_business)):
 
 
 @app.post("/chat/sql")
-def chat_sql(req: ChatRequest, biz: dict = Depends(current_business)):
+def chat_sql(req: ChatRequest, biz: dict = Depends(current_business)):  # noqa: B008
     return {"answer": "coming on Day 3"}
 
 
 @app.post("/chat/docs")
-def chat_docs(req: ChatRequest, biz: dict = Depends(current_business)):
+def chat_docs(req: ChatRequest, biz: dict = Depends(current_business)):  # noqa: B008
     return {"answer": "coming on Day 4"}
