@@ -1,5 +1,6 @@
 import time
 
+import psycopg
 import sqlglot
 from langchain.chat_models import init_chat_model
 from pydantic import BaseModel, Field
@@ -29,6 +30,8 @@ Rules:
 - Return exactly one SELECT statement. Never modify data.
 - Rows are already restricted to the current business; do not filter by business_id.
 - Use clear column aliases. For trends, group by date_trunc('month', ...) and alias it month.
+- If the user asks to add, change or delete data, do not attempt it. Instead return:
+  select 'I can only read your data. I cannot add, change or delete records.' as message
 
 Examples:
 Q: How much revenue did I make last month?
@@ -43,6 +46,7 @@ SQL: select c.name, sum(i.total) as amount_owed from invoices i
 ANSWER_PROMPT = (
     "You explain query results to a small business owner in 2-4 short sentences. "
     "Use RM for money. Do not mention SQL. If there are no rows, say so plainly."
+    "Never offer to add, change or delete data; you can only read it."
 )
 
 
@@ -73,15 +77,18 @@ def ask_data(question: str, business_id, max_retries: int = 2) -> dict:
     messages = [("system", SYSTEM_PROMPT), ("human", question)]
     sql, error = None, None
     for attempt in range(max_retries + 1):
-        sql = sql_llm.invoke(messages).sql
         try:
+            result = sql_llm.invoke(messages)
+            if result is None:
+                raise ValueError("Model returned no SQL query.")
+            sql = result.sql
             safe_sql = validate_sql(sql)
             cols, rows = run_safe_sql(safe_sql, business_id)
             break
-        except (RuntimeError, TypeError, ValueError) as e:
+        except (RuntimeError, TypeError, ValueError, psycopg.Error) as e:
             error = str(e)
             messages += [
-                ("ai", sql),
+                ("ai", sql or ""),
                 (
                     "human",
                     f"That query failed with this error:\n{error}\nReturn a corrected query.",
@@ -102,9 +109,16 @@ def ask_data(question: str, business_id, max_retries: int = 2) -> dict:
     answer = llm.invoke(
         [
             ("system", ANSWER_PROMPT),
-            ("human", f"Question: {question}\nResult rows: {preview}"),
+            (
+                "human",
+                (
+                    f"Question: {question}\n"
+                    f"Total rows returned: {len(rows)} (showing first {len(preview)})\n"
+                    f"Result rows: {preview}"
+                ),
+            ),
         ]
-    ).content
+    ).text
     return {
         "answer": answer,
         "sql": safe_sql,
