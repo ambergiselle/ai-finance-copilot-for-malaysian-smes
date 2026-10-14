@@ -1,5 +1,5 @@
-from app.agents.sql_agent import validate_sql
 import pytest
+from app.agents.sql_agent import validate_sql
 
 
 def test_allows_simple_select():
