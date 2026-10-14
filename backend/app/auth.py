@@ -16,16 +16,16 @@ def supabase_client():
     return create_client(settings.supabase_url, settings.supabase_anon_key)
 
 
-def current_business(cred: HTTPAuthorizationCredentials = bearer_dependency):
+def current_business(creds: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
     try:
-        user = supabase_client().auth.get_user(cred.credentials).user
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=401, detail="Invalid token")
+        user = supabase_client().auth.get_user(creds.credentials).user
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     rows = app_query(
         "select id, name, industry from businesses where owner_id = %s", (user.id,)
     )
     if not rows:
         raise HTTPException(
-            status_code=404, detail="No business linked to this account"
+            status_code=403, detail="No business linked to this account"
         )
     return rows[0]
