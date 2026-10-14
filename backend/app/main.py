@@ -1,9 +1,9 @@
 from fastapi import Depends, FastAPI
 from pydantic import BaseModel
 
+from .agents.sql_agent import ask_data
 from .auth import current_business
 from .db import run_safe_sql
-from .agents.sql_agent import ask_data
 
 app = FastAPI(title="AI Finance Copilot for Malaysian SMEs")
 
