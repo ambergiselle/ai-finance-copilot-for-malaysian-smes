@@ -1,4 +1,5 @@
 import time
+from datetime import date
 
 import sqlglot
 from pydantic import BaseModel, Field
@@ -8,10 +9,10 @@ from ..db import run_safe_sql
 from ..llm import make_llm
 
 ALLOWED_TABLES = {"businesses", "customers", "invoices", "transactions"}
-TODAY = "2026-09-30"  # must match END in data/seed.py
 
-SYSTEM_PROMPT = f"""You write PostgreSQL queries for a Malaysian small business finance app.
-Assume today is {TODAY}. Amounts are in Malaysian Ringgit (RM).
+
+SYSTEM_PROMPT = """You write PostgreSQL queries for a Malaysian small business finance app.
+Assume today is {today}. Amounts are in Malaysian Ringgit (RM).
 
 Tables:
 - businesses(id, name, industry)
@@ -22,7 +23,7 @@ Tables:
   Days late = paid_date - due_date.
 - transactions(id, business_id, txn_date, type, category, description, amount, invoice_id)
   type is income or expense. Expense categories: rent, salaries, supplies, utilities,
-  marketing, maintenance. Income category: sales.
+  marketing, maintenance, other. Income category: sales.
 
 Rules:
 - Return exactly one SELECT statement. Never modify data.
@@ -55,7 +56,7 @@ SQL: select c.name,
 
 ANSWER_PROMPT = (
     "You explain query results to a small business owner in 2-4 short sentences. "
-    "Use RM for money. Do not mention SQL. If there are no rows, say so plainly. "
+    "Use RM for money. Do not mention SQL. If there are no rows, say so plainly and suggest adding data in the My data tab. "
     "If the question asks to add, change or delete data, reply in one sentence that you "
     "can only read data, and do not list any rows. Never offer to change data. "
     "You may only see a preview of the rows: use the total row count you are given."
@@ -98,7 +99,10 @@ def validate_sql(sql: str) -> str:
 
 def ask_data(question: str, business_id, max_retries: int = 2) -> dict:
     start = time.time()
-    messages = [("system", SYSTEM_PROMPT), ("human", question)]
+    messages = [
+        ("system", SYSTEM_PROMPT.format(today=date.today().isoformat())),
+        ("human", question),
+    ]
     sql, error = None, None
     for attempt in range(max_retries + 1):
         sql = None
