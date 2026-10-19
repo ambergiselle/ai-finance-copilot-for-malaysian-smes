@@ -7,19 +7,99 @@ st.set_page_config(page_title="AI Finance Copilot", page_icon="📒", layout="wi
 API = st.secrets["API_URL"]
 sb = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_ANON_KEY"])
 
+EXPENSE_CATEGORIES = [
+    "rent",
+    "salaries",
+    "supplies",
+    "utilities",
+    "marketing",
+    "maintenance",
+    "other",
+]
+INVOICE_TEMPLATE = pd.DataFrame(
+    [
+        {
+            "invoice_no": "INV-0001",
+            "customer_name": "Syarikat Contoh Sdn Bhd",
+            "issue_date": "2026-09-01",
+            "due_date": "2026-10-01",
+            "paid_date": "2026-09-28",
+            "total": "1060.00",
+        },
+        {
+            "invoice_no": "INV-0002",
+            "customer_name": "Kedai Runcit Ali",
+            "issue_date": "2026-09-05",
+            "due_date": "2026-10-05",
+            "paid_date": "",
+            "total": "250.50",
+        },
+    ]
+).to_csv(index=False)
+EXPENSE_TEMPLATE = pd.DataFrame(
+    [
+        {
+            "date": "2026-09-01",
+            "category": "rent",
+            "description": "Shop rent September",
+            "amount": "3500.00",
+        },
+        {
+            "date": "2026-09-15",
+            "category": "utilities",
+            "description": "TNB electricity bill",
+            "amount": "420.80",
+        },
+    ]
+).to_csv(index=False)
 
-def call_api(path, question):
+
+def api(method, path, **kwargs):
     with st.spinner(
-        "Thinking... (the first request may take up to a minute while the server wakes up)"
+        "Working... (the first request may take up to a minute while the server wakes up)"
     ):
-        r = requests.post(
+        return requests.request(
+            method,
             f"{API}{path}",
-            json={"question": question},
             timeout=120,
             headers={"Authorization": f"Bearer {st.session_state.token}"},
+            **kwargs,
         )
-    r.raise_for_status()
+
+
+def check(r):
+    """Return the response body, or show a clear message and stop."""
+    if r.status_code == 401:
+        st.session_state.clear()
+        st.warning("Your session expired. Please refresh the page and log in again.")
+        st.stop()
+    if r.status_code in (400, 403, 404, 409, 413, 422):
+        detail = r.json().get("detail")
+        st.error(
+            detail
+            if isinstance(detail, str)
+            else "Please check the values you entered."
+        )
+        st.stop()
+    if not r.ok:
+        st.error("Something went wrong on the server. Please try again in a minute.")
+        st.caption(f"Status {r.status_code}")
+        st.stop()
     return r.json()
+
+
+def show_import_result(res):
+    if res["errors"]:
+        st.error(f"Nothing was saved. {res['error_count']} row(s) need fixing:")
+        for e in res["errors"]:
+            st.write("- " + e)
+        return
+    message = f"Saved {res['imported']} row(s)."
+    if res.get("skipped_duplicates"):
+        message += (
+            f" Skipped {res['skipped_duplicates']} invoice(s) that were already saved."
+        )
+    st.success(message)
 
 
 def auto_chart(df):
@@ -35,7 +115,8 @@ def auto_chart(df):
 
 if "token" not in st.session_state:
     st.title("📒 AI Finance Copilot for Malaysian SMEs")
-    with st.form("login"):
+    login_tab, signup_tab = st.tabs(["Log in", "Sign up"])
+    with login_tab, st.form("login"):
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         if st.form_submit_button("Log in"):
@@ -44,13 +125,60 @@ if "token" not in st.session_state:
                     {"email": email, "password": password}
                 )
                 st.session_state.token = res.session.access_token
-                st.rerun()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 st.error("Login failed. Check your email and password.")
+    with signup_tab, st.form("signup"):
+        new_email = st.text_input("Email", key="signup_email")
+        new_password = st.text_input(
+            "Password (at least 8 characters)", type="password", key="signup_password"
+        )
+        if st.form_submit_button("Create account"):
+            if len(new_password) < 8:
+                st.error("Use at least 8 characters for your password.")
+            else:
+                try:
+                    res = sb.auth.sign_up(
+                        {"email": new_email, "password": new_password}
+                    )
+                    if res.session:
+                        st.session_state.token = res.session.access_token
+                    else:
+                        st.success(
+                            "Account created. Check your email to confirm it, then log in."
+                        )
+                except Exception as e:  # noqa: BLE001
+                    st.error(f"Sign-up failed: {e}")
+    if "token" in st.session_state:
+        st.rerun()
     st.stop()
 
-st.title("📒 AI Finance Copilot")
-tab_data, tab_docs = st.tabs(["Ask your data", "E-invoicing help"])
+if "business" not in st.session_state:
+    r = api("GET", "/me")
+    if r.status_code == 404:
+        st.title("📒 Set up your business")
+        with st.form("setup"):
+            name = st.text_input("Business name")
+            industry = st.selectbox(
+                "Industry", ["F&B", "Retail", "Services", "Education", "Other"]
+            )
+            submitted = st.form_submit_button("Save")
+        if submitted:
+            st.session_state.business = check(
+                api("POST", "/business", json={"name": name, "industry": industry})
+            )
+            st.rerun()
+        st.stop()
+    st.session_state.business = check(r)
+
+biz = st.session_state.business
+st.title(f"📒 {biz['name']}")
+with st.sidebar:
+    st.caption("AI Finance Copilot for Malaysian SMEs")
+    if st.button("Log out"):
+        st.session_state.clear()
+        st.rerun()
+
+tab_data, tab_docs, tab_mine = st.tabs(["Ask your data", "E-invoicing help", "My data"])
 
 with tab_data:
     q = st.text_input(
@@ -58,14 +186,15 @@ with tab_data:
         placeholder="Which customers paid late most often this year?",
     )
     if st.button("Ask", key="ask_data") and q:
-        res = call_api("/chat/sql", q)
+        res = check(api("POST", "/chat/sql", json={"question": q}))
         st.write(res["answer"])
         if res.get("rows"):
             df = pd.DataFrame(res["rows"], columns=res["columns"])
             auto_chart(df.copy())
             st.dataframe(df, use_container_width=True)
-        with st.expander("SQL used"):
-            st.code(res.get("sql") or "", language="sql")
+        if res.get("sql"):
+            with st.expander("SQL used"):
+                st.code(res["sql"], language="sql")
 
 with tab_docs:
     q2 = st.text_input(
@@ -73,7 +202,7 @@ with tab_docs:
         placeholder="My shop makes RM1.5 million a year. Do I need to issue e-Invoices?",
     )
     if st.button("Ask", key="ask_docs") and q2:
-        res = call_api("/chat/docs", q2)
+        res = check(api("POST", "/chat/docs", json={"question": q2}))
         st.write(res["answer"])
         st.caption(
             "Sources: "
@@ -82,3 +211,40 @@ with tab_docs:
                 for c in res["citations"]
             )
         )
+
+with tab_mine:
+    if biz.get("read_only"):
+        st.info(
+            "This is the read-only demo account, so saving is turned off. Sign up to load your own data."
+        )
+    st.subheader("Import from CSV")
+    st.write(
+        "Download a template, fill it in Excel, save it as CSV, then upload it. "
+        "Dates can be YYYY-MM-DD or DD/MM/YYYY. Leave paid_date empty for unpaid invoices."
+    )
+    c1, c2 = st.columns(2)
+    c1.download_button(
+        "Invoice template", INVOICE_TEMPLATE, "invoices_template.csv", "text/csv"
+    )
+    c2.download_button(
+        "Expense template", EXPENSE_TEMPLATE, "expenses_template.csv", "text/csv"
+    )
+    kind = st.radio(
+        "What are you uploading?", ["invoices", "expenses"], horizontal=True
+    )
+    up = st.file_uploader("CSV file", type="csv", key="csv_upload")
+    if up is not None:
+        try:
+            st.dataframe(pd.read_csv(up, dtype=str).head(10), use_container_width=True)
+        except Exception:  # noqa: BLE001 - preview only; the server does the real checks
+            st.warning("Couldn't preview this file. It may not be a valid CSV.")
+        if st.button("Import", key="import_csv"):
+            show_import_result(
+                check(
+                    api(
+                        "POST",
+                        f"/import/csv/{kind}",
+                        files={"file": (up.name, up.getvalue(), "text/csv")},
+                    )
+                )
+            )
