@@ -1,6 +1,7 @@
 from fastapi import Depends, FastAPI
 from pydantic import BaseModel
 
+from .agents.rag_chain import ask_docs
 from .agents.sql_agent import ask_data
 from .auth import current_business
 from .db import run_safe_sql
@@ -40,4 +41,4 @@ def chat_sql(req: ChatRequest, biz: dict = Depends(current_business)):  # noqa: 
 
 @app.post("/chat/docs")
 def chat_docs(req: ChatRequest, biz: dict = Depends(current_business)):  # noqa: B008
-    return {"answer": "coming on Day 4"}
+    return ask_docs(req.question)

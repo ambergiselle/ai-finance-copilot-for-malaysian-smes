@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     supabase_anon_key: str
     database_url: str
     agent_database_url: str
-    llm_model: str = "gemini-3.6-flash"
+    llm_provider: str = "groq"
+    llm_model: str = "openai/gpt-oss-120"
     embedding_model: str = "gemini-embedding-001"
 
 
