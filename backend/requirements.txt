@@ -13,5 +13,7 @@ sqlglot
 pypdf
 python-dotenv
 pytest
+pandas
+python-multipart
 httpx
 ruff

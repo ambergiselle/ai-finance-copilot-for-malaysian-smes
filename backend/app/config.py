@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     llm_provider: str = "groq"
     llm_model: str = "openai/gpt-oss-120"
     embedding_model: str = "gemini-embedding-001"
+    demo_business_name: str = "Kopitiam Ah Seng"
 
 
 settings = Settings()
