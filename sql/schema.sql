@@ -2,7 +2,7 @@ create extension if not exists vector;
 
 create table businesses (
   id uuid primary key default gen_random_uuid(), -- unique business ID
-  owner_id uuid references auth.users(id), -- the user who owns this business
+  owner_id uuid unique references auth.users(id), -- the user who owns this business
   name text not null,
   industry text,
   created_at timestamptz default now()
@@ -27,6 +27,7 @@ create table invoices (
   tax numeric(12,2) default 0,
   total numeric(12,2) not null,
   status text check (status in ('issued','paid','overdue','cancelled'))
+  unique (business_id, invoice_no)
 );
 
 create table transactions (
