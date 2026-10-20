@@ -1,0 +1,102 @@
+[
+  {
+    "file": "INV-2026-001.pdf",
+    "kind": "sales",
+    "invoice_no": "INV-2026-001",
+    "counterparty": "Pusat Tuisyen Bestari",
+    "issue_date": "2026-09-11",
+    "due_date": "2026-10-11",
+    "total": "5029.21",
+    "tax": "284.67"
+  },
+  {
+    "file": "INV-2026-002.pdf",
+    "kind": "sales",
+    "invoice_no": "INV-2026-002",
+    "counterparty": "Restoran Selera Kita",
+    "issue_date": "2026-09-13",
+    "due_date": "2026-10-13",
+    "total": "3486.95",
+    "tax": "197.37"
+  },
+  {
+    "file": "INV-2026-003.pdf",
+    "kind": "sales",
+    "invoice_no": "INV-2026-003",
+    "counterparty": "Syarikat Wong Holdings",
+    "issue_date": "2026-09-03",
+    "due_date": "2026-10-03",
+    "total": "4371.69",
+    "tax": "247.45"
+  },
+  {
+    "file": "INV-2026-004.pdf",
+    "kind": "sales",
+    "invoice_no": "INV-2026-004",
+    "counterparty": "Kedai Runcit Aminah",
+    "issue_date": "2026-09-04",
+    "due_date": "2026-10-04",
+    "total": "2005.39",
+    "tax": "113.51"
+  },
+  {
+    "file": "INV-2026-005.pdf",
+    "kind": "sales",
+    "invoice_no": "INV-2026-005",
+    "counterparty": "Bengkel Kereta Jaya",
+    "issue_date": "2026-09-02",
+    "due_date": "2026-10-02",
+    "total": "4831.00",
+    "tax": "273.45"
+  },
+  {
+    "file": "BILL-8104.pdf",
+    "kind": "bill",
+    "invoice_no": "BILL-8104",
+    "counterparty": "Syarikat Bekalan Maju Sdn Bhd",
+    "issue_date": "2026-09-07",
+    "due_date": "2026-10-07",
+    "total": "300.75",
+    "tax": "17.02"
+  },
+  {
+    "file": "BILL-2486.pdf",
+    "kind": "bill",
+    "invoice_no": "BILL-2486",
+    "counterparty": "Kedai Pembungkusan Lee",
+    "issue_date": "2026-09-14",
+    "due_date": "2026-10-14",
+    "total": "468.83",
+    "tax": "26.54"
+  },
+  {
+    "file": "BILL-3028.pdf",
+    "kind": "bill",
+    "invoice_no": "BILL-3028",
+    "counterparty": "Percetakan Cahaya Enterprise",
+    "issue_date": "2026-09-18",
+    "due_date": "2026-10-18",
+    "total": "2310.95",
+    "tax": "130.81"
+  },
+  {
+    "file": "BILL-2013.pdf",
+    "kind": "bill",
+    "invoice_no": "BILL-2013",
+    "counterparty": "Gas Bersatu Trading",
+    "issue_date": "2026-09-08",
+    "due_date": "2026-10-08",
+    "total": "3381.47",
+    "tax": "191.40"
+  },
+  {
+    "file": "BILL-1812.pdf",
+    "kind": "bill",
+    "invoice_no": "BILL-1812",
+    "counterparty": "Ladang Sayur Segar Sdn Bhd",
+    "issue_date": "2026-09-19",
+    "due_date": "2026-10-19",
+    "total": "3147.30",
+    "tax": "178.15"
+  }
+]
