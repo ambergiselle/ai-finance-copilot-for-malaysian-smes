@@ -99,7 +99,157 @@ def show_import_result(res):
         message += (
             f" Skipped {res['skipped_duplicates']} invoice(s) that were already saved."
         )
+    load_records.clear()
     st.success(message)
+
+
+def my_data_extras(biz):
+    """Day 7: PDF extraction with review, quick add, mark as paid and delete all data."""
+    st.divider()
+    st.subheader("Extract from invoice PDFs")
+    st.write(
+        "Upload up to 5 PDF invoices at a time. Only PDFs made by software work for now, "
+        "not scans or photos."
+    )
+    label = st.radio(
+        "These PDFs are",
+        ["Sales invoices I issued", "Bills from my suppliers"],
+        horizontal=True,
+    )
+    pdf_kind = "sales" if label.startswith("Sales") else "bill"
+    pdfs = st.file_uploader(
+        "Invoice PDFs", type="pdf", accept_multiple_files=True, key="pdf_upload"
+    )
+    if pdfs and st.button("Extract", key="extract"):
+        results = []
+        for f in pdfs[:5]:
+            r = api(
+                "POST",
+                "/extract/invoice",
+                data={"kind": pdf_kind},
+                files={"file": (f.name, f.getvalue(), "application/pdf")},
+            )
+            results.append(
+                r.json()
+                if r.ok
+                else {"file": f.name, "error": f"Status {r.status_code}"}
+            )
+        st.session_state.extracted = {"kind": pdf_kind, "results": results}
+
+    extracted = st.session_state.get("extracted")
+    if extracted:
+        for x in extracted["results"]:
+            if x.get("error"):
+                st.warning(f"{x['file']}: {x['error']}")
+        ok = [x for x in extracted["results"] if not x.get("error")]
+        if ok:
+            if extracted["kind"] == "sales":
+                review = pd.DataFrame(
+                    [
+                        {
+                            "invoice_no": x["invoice_no"],
+                            "customer_name": x["counterparty"],
+                            "issue_date": x["issue_date"],
+                            "due_date": x["due_date"],
+                            "paid_date": "",
+                            "total": x["total"],
+                            "tax": x["tax"],
+                        }
+                        for x in ok
+                    ]
+                )
+                config = {}
+            else:
+                review = pd.DataFrame(
+                    [
+                        {
+                            "date": x["issue_date"],
+                            "category": "supplies",
+                            "description": f"Bill {x['invoice_no']} from {x['counterparty']}",
+                            "amount": x["total"],
+                        }
+                        for x in ok
+                    ]
+                )
+                config = {
+                    "category": st.column_config.SelectboxColumn(
+                        "category", options=EXPENSE_CATEGORIES
+                    )
+                }
+            st.write(
+                "**Check every row against the PDF and fix anything wrong before saving.** "
+                "For sales invoices that are already paid, fill in paid_date."
+            )
+            edited = st.data_editor(
+                review,
+                column_config=config,
+                num_rows="dynamic",
+                use_container_width=True,
+                key="review",
+            )
+            if st.button("Save", key="save_review"):
+                res = check(
+                    api(
+                        "POST",
+                        "/import/rows",
+                        json={
+                            "kind": extracted["kind"],
+                            "rows": edited.fillna("").astype(str).to_dict("records"),
+                        },
+                    )
+                )
+                show_import_result(res)
+                if not res["errors"]:
+                    del st.session_state.extracted
+
+    st.divider()
+    st.subheader("Quick add")
+    with st.expander("Add one invoice"), st.form("quick_add"):
+        q_no = st.text_input("Invoice number")
+        q_customer = st.text_input("Customer name")
+        q_issue = st.date_input("Issue date")
+        q_due = st.date_input("Due date")
+        q_total = st.number_input("Total (RM)", min_value=0.0, step=10.0)
+        q_is_paid = st.checkbox("Already paid")
+        q_paid = st.date_input("Paid date (if paid)")
+        if st.form_submit_button("Save invoice"):
+            row = {
+                "invoice_no": q_no,
+                "customer_name": q_customer,
+                "issue_date": str(q_issue),
+                "due_date": str(q_due),
+                "paid_date": str(q_paid) if q_is_paid else "",
+                "total": str(q_total),
+            }
+            show_import_result(
+                check(
+                    api("POST", "/import/rows", json={"kind": "sales", "rows": [row]})
+                )
+            )
+    with st.expander("Mark an invoice as paid"), st.form("mark_paid"):
+        p_no = st.text_input("Invoice number", key="paid_no")
+        p_date = st.date_input("Paid date", key="paid_date")
+        if st.form_submit_button("Mark as paid"):
+            invoice_path = requests.utils.quote(p_no.strip(), safe="")
+            check(
+                api(
+                    "POST",
+                    f"/invoices/{invoice_path}/paid",
+                    json={"paid_date": str(p_date)},
+                )
+            )
+            st.success(f"{p_no} marked as paid.")
+            load_records.clear()
+
+    st.divider()
+    st.subheader("Danger zone")
+    confirm = st.checkbox(
+        "I understand this permanently deletes all my customers, invoices and transactions"
+    )
+    if st.button("Delete all my data", disabled=not confirm, key="delete_all"):
+        check(api("DELETE", "/data"))
+        st.success("All your data has been deleted.")
+        load_records.clear()
 
 
 def auto_chart(df):
@@ -111,6 +261,17 @@ def auto_chart(df):
         return
     data = df.set_index(x)[y]
     st.line_chart(data) if ("month" in x or "date" in x) else st.bar_chart(data)
+
+
+@st.cache_data(ttl=60, show_spinner="Loading your records...")
+def load_records(token, kind):
+    r = requests.get(
+        f"{API}/records/{kind}",
+        timeout=120,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    r.raise_for_status()
+    return r.json()
 
 
 if "token" not in st.session_state:
@@ -178,7 +339,9 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
-tab_data, tab_docs, tab_mine = st.tabs(["Ask your data", "E-invoicing help", "My data"])
+tab_data, tab_docs, tab_mine, tab_records = st.tabs(
+    ["Ask your data", "E-invoicing help", "My data", "Records"]
+)
 
 with tab_data:
     q = st.text_input(
@@ -248,3 +411,45 @@ with tab_mine:
                     )
                 )
             )
+    my_data_extras(biz)
+
+with tab_records:
+    try:
+        inv = pd.DataFrame(load_records(st.session_state.token, "invoices"))
+        exp = pd.DataFrame(load_records(st.session_state.token, "expenses"))
+    except requests.RequestException:
+        st.error("Couldn't load your records. Please try again in a minute.")
+        st.stop()
+
+    if inv.empty and exp.empty:
+        st.info("No records yet. Add invoices or expenses in the My data tab.")
+        st.stop()
+
+    c1, c2, c3 = st.columns(3)
+    if not inv.empty:
+        unpaid = inv[inv["status"].isin(["issued", "overdue"])]
+        c1.metric("Still owed to you", f"RM{unpaid['total'].astype(float).sum():,.2f}")
+        c2.metric("Overdue invoices", int((inv["status"] == "overdue").sum()))
+    if not exp.empty:
+        month = pd.Timestamp.today().strftime("%Y-%m")
+        this_month = exp[exp["date"].astype(str).str.startswith(month)]
+        c3.metric(
+            "Expenses this month", f"RM{this_month['amount'].astype(float).sum():,.2f}"
+        )
+
+    st.subheader("Invoices")
+    if inv.empty:
+        st.caption("No invoices yet.")
+    else:
+        status = st.selectbox(
+            "Status", ["all", "overdue", "issued", "paid", "cancelled"]
+        )
+        shown = inv if status == "all" else inv[inv["status"] == status]
+        st.caption(f"{len(shown)} invoice(s). Showing the latest 500.")
+        st.dataframe(shown, use_container_width=True, hide_index=True)
+
+    st.subheader("Expenses")
+    if exp.empty:
+        st.caption("No expenses yet.")
+    else:
+        st.dataframe(exp, use_container_width=True, hide_index=True)
