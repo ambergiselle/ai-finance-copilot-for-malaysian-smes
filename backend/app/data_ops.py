@@ -275,3 +275,28 @@ def refresh_overdue(business_id) -> None:
                and due_date < current_date""",
             (business_id,),
         )
+
+
+def mark_paid(business_id, invoice_no: str, paid: date) -> bool:
+    with psycopg.connect(settings.database_url) as conn:
+        row = conn.execute(
+            """update invoices set paid_date = %s, status = 'paid'
+               where business_id = %s and invoice_no = %s and paid_date is null
+               returning id, total""",
+            (paid, business_id, invoice_no),
+        ).fetchone()
+        if row is None:
+            return False
+        conn.execute(
+            """insert into transactions (business_id, txn_date, type, category, description,
+               amount, invoice_id) values (%s, %s, 'income', 'sales', %s, %s, %s)""",
+            (business_id, paid, f"Payment for {invoice_no}", row[1], row[0]),
+        )
+    return True
+
+
+def delete_all_data(business_id) -> None:
+    with psycopg.connect(settings.database_url) as conn:
+        conn.execute("delete from transactions where business_id = %s", (business_id,))
+        conn.execute("delete from invoices where business_id = %s", (business_id,))
+        conn.execute("delete from customers where business_id = %s", (business_id,))
