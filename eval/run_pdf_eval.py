@@ -4,8 +4,8 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, "backend")
-from app.agents.invoice_extractor import extract_invoice  # noqa: E402
-from app.data_ops import parse_date, parse_money  # noqa: E402
+from app.agents.invoice_extractor import extract_invoice
+from app.data_ops import parse_date, parse_money
 
 FIELDS = ["invoice_no", "counterparty", "issue_date", "due_date", "total", "tax"]
 
