@@ -1,7 +1,8 @@
+from fastapi.testclient import TestClient
+
 from app import main
 from app.auth import current_business
 from app.main import app
-from fastapi.testclient import TestClient
 
 client = TestClient(app)
 
