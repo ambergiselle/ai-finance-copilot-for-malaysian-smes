@@ -446,10 +446,15 @@ with tab_records:
         c1.metric("Still owed to you", f"RM{unpaid['total'].astype(float).sum():,.2f}")
         c2.metric("Overdue invoices", int((inv["status"] == "overdue").sum()))
     if not exp.empty:
-        month = pd.Timestamp.today().strftime("%Y-%m")
-        this_month = exp[exp["date"].astype(str).str.startswith(month)]
+        latest = exp["date"].astype(str).str[:7].max()
+        latest_total = (
+            exp[exp["date"].astype(str).str.startswith(latest)]["amount"]
+            .astype(float)
+            .sum()
+        )
         c3.metric(
-            "Expenses this month", f"RM{this_month['amount'].astype(float).sum():,.2f}"
+            f"Expenses in {pd.to_datetime(latest).strftime('%b %Y')}",
+            f"RM{latest_total:,.2f}",
         )
 
     st.subheader("Invoices")
@@ -461,8 +466,7 @@ with tab_records:
         )
         shown = inv if status == "all" else inv[inv["status"] == status]
         st.caption(f"{len(shown)} invoice(s). Showing the latest 500.")
-        st.dataframe(shown, use_container_width=True, hide_index=True)
-
+        st.dataframe(shown.fillna(""), use_container_width=True, hide_index=True)
     st.subheader("Expenses")
     if exp.empty:
         st.caption("No expenses yet.")
