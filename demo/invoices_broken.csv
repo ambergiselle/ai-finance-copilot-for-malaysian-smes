@@ -1,0 +1,5 @@
+invoice_no,customer_name,issue_date,due_date,paid_date,total
+INV-2001,Restoran Selera Kita,2026-09-01,2026-10-01,,500.00
+INV-2002,Kedai Runcit Aminah,31/02/2026,2026-10-01,,320.00
+INV-2003,Bengkel Kereta Jaya,2026-09-10,2026-10-10,,640.00
+INV-2004,Pusat Tuisyen Bestari,2026-09-12,2026-10-12,,abc

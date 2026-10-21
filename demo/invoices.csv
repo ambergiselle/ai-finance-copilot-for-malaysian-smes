@@ -1,0 +1,9 @@
+invoice_no,customer_name,issue_date,due_date,paid_date,total
+INV-1001,Restoran Selera Kita,2026-08-03,2026-09-02,2026-08-28,1250.00
+INV-1002,Pusat Tuisyen Bestari,2026-08-10,2026-09-09,2026-09-20,860.50
+INV-1003,Syarikat Wong Holdings,2026-08-18,2026-09-17,,2400.00
+INV-1004,Restoran Selera Kita,2026-09-02,2026-10-02,2026-09-30,1575.00
+INV-1005,Kedai Runcit Aminah,2026-09-08,2026-10-08,,430.00
+INV-1006,Bengkel Kereta Jaya,15/09/2026,15/10/2026,,980.25
+INV-1007,Pusat Tuisyen Bestari,2026-10-01,2026-10-31,,720.00
+INV-1008,Syarikat Wong Holdings,05/10/2026,04/11/2026,12/10/2026,3150.00
