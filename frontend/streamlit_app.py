@@ -465,8 +465,11 @@ with tab_records:
             "Status", ["all", "overdue", "issued", "paid", "cancelled"]
         )
         shown = inv if status == "all" else inv[inv["status"] == status]
-        st.caption(f"{len(shown)} invoice(s). Showing the latest 500.")
-        st.dataframe(shown.fillna(""), use_container_width=True, hide_index=True)
+    st.caption(
+        f"{len(shown)} invoice(s)."
+        + (" Showing the latest 500." if len(inv) >= 500 else "")
+    )
+    st.dataframe(shown.fillna(""), use_container_width=True, hide_index=True)
     st.subheader("Expenses")
     if exp.empty:
         st.caption("No expenses yet.")
