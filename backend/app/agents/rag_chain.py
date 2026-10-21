@@ -1,5 +1,5 @@
-import time
 import re
+import time
 
 import numpy as np
 import psycopg
