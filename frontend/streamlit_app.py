@@ -378,13 +378,17 @@ with tab_docs:
     if st.button("Ask", key="ask_docs") and q2:
         res = check(api("POST", "/chat/docs", json={"question": q2}))
         st.write(res["answer"])
-        st.caption(
-            "Sources: "
-            + " · ".join(
-                f"[{c['n']}] {c['source']} v{c['version']}, p. {c['page']}"
-                for c in res["citations"]
+        cited = [c for c in res["citations"] if f"[{c['n']}]" in res["answer"]] or res[
+            "citations"
+        ]
+        if cited:
+            st.caption(
+                "Sources: "
+                + " · ".join(
+                    f"[{c['n']}] {c['source']} v{c['version']}, p. {c['page']}"
+                    for c in cited
+                )
             )
-        )
 
 with tab_mine:
     if biz.get("read_only"):
