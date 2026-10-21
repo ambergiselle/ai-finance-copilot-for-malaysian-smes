@@ -232,30 +232,41 @@ cd backend
 pytest
 ruff check .
 ```
-
-## Project structure
+## Project Structure
 
 ```
-backend/
-  app/
-    agents/
-      sql_agent.py           Text-to-SQL agent with guardrails and self-correction
-      rag_chain.py           Retrieval and cited answers over the LHDN guidelines
-      invoice_extractor.py   PDF field extraction with structured output
-    auth.py                  Token verification, business lookup, read-only checks
-    data_ops.py              CSV validation, imports and other write operations
-    db.py                    Trusted and read-only database helpers
-    llm.py                   Shared chat-model factory
-    main.py                  FastAPI routes
-  tests/                     API, guardrail and import validation tests
-frontend/streamlit_app.py    User interface
-data/
-  seed.py                    Synthetic demo data
-  ingest_docs.py             Chunk, embed and store the guidelines
-  make_sample_invoices.py    Sample invoice PDFs and their ground truth
-demo/                        Sample CSVs and invoice PDFs for trying the app
-eval/                        Extraction evaluation script and results
-sql/                         Schema, read-only role and Row Level Security policies
+sme-finance-copilot/
+├── backend/                          # FastAPI service, Docker on Render
+│   ├── app/
+│   │   ├── main.py                   # API routes and request models
+│   │   ├── config.py                 # pydantic-settings configuration
+│   │   ├── auth.py                   # Token check, tenant lookup, read-only guard
+│   │   ├── db.py                     # Trusted and read-only (RLS) database helpers
+│   │   ├── llm.py                    # Shared chat-model factory
+│   │   ├── data_ops.py               # CSV validation, imports and writes
+│   │   └── agents/                   # LLM pipelines
+│   │       ├── sql_agent.py          # Text-to-SQL agent, guardrails, self-correction
+│   │       ├── rag_chain.py          # Retrieval and cited answers
+│   │       └── invoice_extractor.py  # PDF extraction with structured output
+│   ├── tests/                        # pytest suites
+│   │   ├── test_api.py               # API and read-only demo tests
+│   │   ├── test_guardrails.py        # SQL validator tests
+│   │   └── test_data_ops.py          # CSV validation tests
+│   ├── Dockerfile                    # Backend container
+│   └── requirements.txt              # Backend dependencies
+├── frontend/                         # Streamlit app on Community Cloud
+│   ├── streamlit_app.py              # Chat, data import, PDF review, records
+│   └── requirements.txt              # Frontend dependencies
+├── data/
+│   ├── seed.py                       # Synthetic demo businesses
+│   ├── ingest_docs.py                # Chunk and embed the LHDN guidelines
+│   ├── make_sample_invoices.py       # Sample invoice PDFs and ground truth
+│   └── docs/                         # LHDN guideline PDFs (download separately)
+├── demo/                             # Sample CSVs and PDFs for trying the app
+├── eval/                             # Extraction evaluation script and results
+├── sql/                              # Schema, read-only role, RLS policies
+├── scripts/                          # Helper for getting a test token
+├── .github/workflows/                # CI: Ruff and pytest
+├── .env.example                      # Environment variable template
+└── README.md
 ```
-
-
