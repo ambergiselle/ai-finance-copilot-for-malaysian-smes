@@ -2,7 +2,6 @@ from datetime import date
 
 import pandas as pd
 import pytest
-
 from app.data_ops import (
     invoice_status,
     normalise,
