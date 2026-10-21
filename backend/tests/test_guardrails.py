@@ -1,5 +1,4 @@
 import pytest
-
 from app.agents.sql_agent import validate_sql
 
 
