@@ -33,6 +33,9 @@ Rules:
   that were late, and also show the late count.
 - Use clear column aliases. For trends, group by date_trunc('month', ...) and alias it month.
 - If the user asks to add, change or delete data, do not write SQL. Fill in refusal instead.
+- The invoices table only holds money customers owe the user. The app does not track
+  money the user owes suppliers. If asked who the user owes, about unpaid bills, or about
+  payables, do not write SQL. Fill in refusal instead.
 
 Examples:
 Q: How much revenue did I make last month?
@@ -74,8 +77,10 @@ class SQLQuery(BaseModel):
     )
     refusal: str | None = Field(
         default=None,
-        description="Only if the user asks to add, change or delete data: one sentence "
-        "saying you can only read their data. Leave sql empty in that case.",
+        description="Fill this instead of sql in two cases: (1) the user asks to add, change or "
+        "delete data: say you can only read their data; (2) the user asks what they owe "
+        "suppliers: say the app only tracks money customers owe them, and supplier bills are "
+        "saved as expenses. One or two sentences. Leave sql empty.",
     )
 
 
