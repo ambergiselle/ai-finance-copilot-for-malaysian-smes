@@ -4,36 +4,19 @@
 
 AI Finance Copilot lets Malaysian small businesses query their financial data in plain English and get cited answers on LHDN e-invoicing rules. It combines a **text-to-SQL agent** with query validation and self-correction, a **RAG pipeline** over the official guidelines using pgvector semantic search, and **structured-output extraction** of invoice PDFs with human review before saving. PostgreSQL Row Level Security and a read-only database role keep each business's data isolated and protected from AI-generated queries. Built with FastAPI, LangChain, Supabase and Streamlit, and deployed with Docker, CI and LangSmith tracing.
 
-**Live Demo:** [STREAMLIT-APP-LINK](STREAMLIT-APP-LINK)
-\
-**Demo login:** `DEMO-EMAIL` / `DEMO-PASSWORD` (read-only, preloaded with a year of sample data)
-\
-**API documentation:** [ai-finance-copilot-for-malaysian-smes.onrender.com/docs](https://ai-finance-copilot-for-malaysian-smes.onrender.com/docs)
 
+## Live Demo
 
----
+Try the deployed app: **[Live Demo](https://ai-finance-copilot-malaysian-sme.streamlit.app/)**
 
-## Contents
-
-- [The problem](#the-problem)
-- [Features](#features)
-- [Screenshots](#screenshots)
-- [Architecture](#architecture)
-- [Results](#results)
-- [Tech stack](#tech-stack)
-- [API endpoints](#api-endpoints)
-- [Getting started](#getting-started)
-- [Project structure](#project-structure)
+| | |
+|---|---|
+| **Demo login** | `user@email.com` / `123456` |
+| **Access** | Read-only, preloaded with a year of sample data for a Malaysian kopitiam |
+| **Your own data** | Sign up, then upload the sample files in [`demo/`](demo/) |
+| **API Documentation** | [Swagger UI](https://ai-finance-copilot-for-malaysian-smes.onrender.com/docs) |
 
 ---
-
-## The Problem
-
-Malaysian small business owners face two recurring problems:
-
-1. **Limited visibility into their own numbers.** Questions such as *"Who still owes me money?"* or *"Are my utility bills rising?"* typically require filtering spreadsheets by hand or waiting for an accountant, so late payers and rising costs are noticed too late.
-2. **Uncertainty about e-invoicing.** LHDN is rolling out e-invoicing in phases, and the rules are spread across two long technical guidelines. Many owners are unsure whether the rules apply to them yet, which exemptions they qualify for, and how specific situations, such as cancelling a validated e-Invoice, are handled.
-
 ## Features
 
 | Area | What it does |
@@ -44,21 +27,6 @@ Malaysian small business owners face two recurring problems:
 | **Records** | View all saved invoices and expenses, with totals owed, overdue invoices and this month's expenses. Mark invoices as paid, add single invoices, or delete all data. |
 | **Ask your data** | Plain-English questions are answered by a text-to-SQL agent that writes a safe query, runs it on the user's data only, and explains the result, with an automatic chart and the query shown for transparency. |
 | **E-invoicing help** | Answers come only from the two official LHDN e-Invoice guidelines, with the source and page for each claim. Off-topic questions are declined. |
-
-## Screenshots
-
-### Ask your data
-![Ask your data](docs/assets/ask-data.png)
-
-### E-invoicing Help
-![E-invoicing help](docs/assets/einvoice.png) 
-
-### Invoice PDF Review
-![Invoice PDF review](docs/assets/pdf-review.png)
-
-### Records
-![Records](docs/assets/records.png) 
-
 ## Architecture
 
 ```mermaid
@@ -134,6 +102,21 @@ flowchart TB
 | **SQL agent** | The model turns a question into one SQL query, guided by a schema description and worked examples, then explains the result in plain language. | sqlglot allows only a single `SELECT` on four approved tables, with a row limit. Queries run under a read-only role with Row Level Security and a five-second timeout. Failed queries are returned to the model to correct, up to two retries. |
 | **Compliance RAG** | The two LHDN guidelines (versions 4.8 and 4.9) are split into 348 chunks and embedded with Gemini at 1,536 dimensions into pgvector. Each question retrieves the five most similar chunks. | The model answers only from the retrieved passages, cites each one, and states when a question is not covered. |
 | **Invoice extraction** | Text from up to three PDF pages is passed to the model, which fills a fixed schema: invoice number, customer or supplier, dates, total and tax. | Non-invoices are rejected. Extracted rows pass the same validation as CSV imports, and nothing is saved until the user has reviewed it. |
+
+## Screenshots
+
+### Ask your data
+![Ask your data](docs/assets/ask-data.png)
+
+### E-invoicing Help
+![E-invoicing help](docs/assets/einvoice.png) 
+
+### Invoice PDF Review
+![Invoice PDF review](docs/assets/pdf-review.png)
+
+### Records
+![Records](docs/assets/records.png) 
+
 
 
 ## Results
