@@ -270,7 +270,8 @@ def auto_chart(df):
     if df[y].isna().all():
         return
     if "month" in x or "date" in x:
-        df[x] = pd.to_datetime(df[x], errors="coerce", utc=True).dt.tz_localize(None)
+        fmt = "%Y-%m" if "month" in x else "%Y-%m-%d"
+        df[x] = pd.to_datetime(df[x], errors="coerce", utc=True).dt.strftime(fmt)
         st.line_chart(df.set_index(x)[y], height=300)
     else:
         st.bar_chart(df.set_index(x)[y], height=300)
