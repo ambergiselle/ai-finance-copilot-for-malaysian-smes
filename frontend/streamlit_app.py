@@ -252,6 +252,16 @@ def my_data_extras(biz):
         load_records.clear()
 
 
+def tidy_dates(df):
+    """Show date columns as readable text, like 'May 2026'."""
+    for col in df.columns:
+        if "month" in col or "date" in col:
+            parsed = pd.to_datetime(df[col], errors="coerce", utc=True)
+            if parsed.notna().all():
+                df[col] = parsed.dt.strftime("%b %Y" if "month" in col else "%d %b %Y")
+    return df
+
+
 def auto_chart(df):
     if len(df.columns) != 2 or df.empty:
         return
@@ -259,8 +269,11 @@ def auto_chart(df):
     df[y] = pd.to_numeric(df[y], errors="coerce")
     if df[y].isna().all():
         return
-    data = df.set_index(x)[y]
-    st.line_chart(data) if ("month" in x or "date" in x) else st.bar_chart(data)
+    if "month" in x or "date" in x:
+        df[x] = pd.to_datetime(df[x], errors="coerce", utc=True).dt.tz_localize(None)
+        st.line_chart(df.set_index(x)[y], height=300)
+    else:
+        st.bar_chart(df.set_index(x)[y], height=300)
 
 
 @st.cache_data(ttl=60, show_spinner="Loading your records...")
@@ -354,10 +367,7 @@ with tab_data:
         if res.get("rows"):
             df = pd.DataFrame(res["rows"], columns=res["columns"])
             auto_chart(df.copy())
-            st.dataframe(df, use_container_width=True)
-        if res.get("sql"):
-            with st.expander("SQL used"):
-                st.code(res["sql"], language="sql")
+            st.dataframe(tidy_dates(df), use_container_width=True)
 
 with tab_docs:
     q2 = st.text_input(
