@@ -1,4 +1,5 @@
 import time
+import re
 
 import numpy as np
 import psycopg
@@ -51,6 +52,8 @@ def ask_docs(question: str) -> dict:
             ("human", f"Context:\n{context}\n\nQuestion: {question}"),
         ]
     ).text
+    # Normalise gpt-oss citation styles like 【2†L1-L4】 or [2†L1-L4] to [2]
+    answer = re.sub(r"[【\[](\d+)†[^】\]]*[】\]]", r"[\1]", answer)
     answer = answer.replace("【", "[").replace("】", "]").replace(" .", ".")
     citations = [
         {"n": i, "source": c["source"], "version": c["version"], "page": c["page"]}
